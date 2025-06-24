@@ -97,7 +97,7 @@ Installation
 
       hamulight:
 
-2. **Configure the ``hamulight`` component** (see examples below)
+2. **Configure the** ``hamulight`` **component** (see examples below)
 3. **Wire your 433MHz transmitter** to the selected GPIO on your ESP32
 4. **Compile and upload** your ESPHome firmware
 
