@@ -255,13 +255,13 @@ Numbers
 +-----------------------+----------------------------------------+----------------------+
 | Name                  | Description                            | Used for Command Scan|
 +=======================+========================================+======================+
-| Command Scan Start    | First command in scan range            | Yes                 |
+| Command Scan Start    | First command in scan range            | Yes                  |
 +-----------------------+----------------------------------------+----------------------+
-| Command Scan End      | Last command in scan range             | Yes                 |
+| Command Scan End      | Last command in scan range             | Yes                  |
 +-----------------------+----------------------------------------+----------------------+
-| Command Scan Pause    | Delay (ms) between commands            | Yes                 |
+| Command Scan Pause    | Delay (ms) between commands            | Yes                  |
 +-----------------------+----------------------------------------+----------------------+
-| Hamulight Brightness  | Set brightness (0-100%)                | No (direct control) |
+| Hamulight Brightness  | Set brightness (0-100%)                | No (direct control)  |
 +-----------------------+----------------------------------------+----------------------+
 
 Sensors
@@ -270,7 +270,7 @@ Sensors
 +------------------------------+------------------------------------------------+
 | Name                         | Description                                    |
 +==============================+================================================+
-| Hamulight Last Scanned Command| Publishes last command sent during scan        |
+| Hamulight Last Scanned Command| Publishes last command sent during scan       |
 +------------------------------+------------------------------------------------+
 
 Acknowledgements
