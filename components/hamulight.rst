@@ -183,92 +183,92 @@ Example Configuration
 
 .. code-block:: yaml
 
-   hamulight:
-     id: hamulight_transmitter
-     rf_transmit_pin: GPIO2
-     # led_pin: GPIO21     # <- optional: GPIO for feedback LED
-     rf_address: 0xC535    # <- your remote's unique ID, which the LED driver is / should be paired with
+    hamulight:
+      id: hamulight_transmitter
+      rf_transmit_pin: GPIO2
+      # led_pin: GPIO21     # <- optional: GPIO for feedback LED
+      rf_address: 0xC535    # <- your remote's unique ID, which the LED driver is / should be paired with
 
-     # Command scanner configuration (optional)
-     # To use, uncomment and define the matching number/sensor blocks below:
-     # command_scanner:
-     #   enabled: true
-     #   cmdscan_start: hamulight_cmdscan_start
-     #   cmdscan_end: hamulight_cmdscan_end
-     #   cmdscan_pause: hamulight_cmdscan_pause
-     #   last_scanned_sensor: hamulight_last_scanned_command
+      # Command scanner configuration (optional)
+      # To use, uncomment and define the matching number/sensor blocks below:
+      # command_scanner:
+      #   enabled: true
+      #   cmdscan_start: hamulight_cmdscan_start
+      #   cmdscan_end: hamulight_cmdscan_end
+      #   cmdscan_pause: hamulight_cmdscan_pause
+      #   last_scanned_sensor: hamulight_last_scanned_command
 
-   # IMPORTANT: The sensor component is required, even if the command scanner is not used
-   #            You can use e.g. the uptime-sensor as in the example below (or none at all)
-   sensor:
-     - platform: uptime
-       name: "Uptime"
-   # - platform: template
-   #   id: hamulight_last_scanned_command
-   #   name: "Hamulight Last Scanned Command"
+    # IMPORTANT: The sensor component is required, even if the command scanner is not used
+    #            You can use e.g. the uptime-sensor as in the example below (or none at all)
+    sensor:
+      - platform: uptime
+        name: "Uptime"
+    # - platform: template
+    #   id: hamulight_last_scanned_command
+    #   name: "Hamulight Last Scanned Command"
 
-   number:
-     - platform: template
-       id: hamulight_brightness
-       name: "Hamulight Brightness"
-       min_value: 0
-       max_value: 100
-       step: 1
-       optimistic: true
-       initial_value: 100
-       on_value:
-         - lambda: |-
-             id(hamulight_transmitter).set_brightness(x);
+    number:
+      - platform: template
+        id: hamulight_brightness
+        name: "Hamulight Brightness"
+        min_value: 0
+        max_value: 100
+        step: 1
+        optimistic: true
+        initial_value: 100
+        on_value:
+          - lambda: |-
+              id(hamulight_transmitter).set_brightness(x);
 
-   # OPTIONAL - Following number sensors are needed for the command scanner
-   # - platform: template
-   #   id: hamulight_cmdscan_start
-   #   name: "Command Scan Start"
-   #   min_value: 0
-   #   max_value: 127
-   #   step: 1
-   #   optimistic: true
-   #   initial_value: 0
-   # - platform: template
-   #   id: hamulight_cmdscan_end
-   #   name: "Command Scan End"
-   #   min_value: 0
-   #   max_value: 127
-   #   step: 1
-   #   optimistic: true
-   #   initial_value: 127
-   # - platform: template
-   #   id: hamulight_cmdscan_pause
-   #   name: "Command Scan Pause"
-   #   min_value: 0
-   #   max_value: 7000
-   #   step: 100
-   #   optimistic: true
-   #   initial_value: 500
+    # OPTIONAL - Following number sensors are needed for the command scanner
+    # - platform: template
+    #   id: hamulight_cmdscan_start
+    #   name: "Command Scan Start"
+    #   min_value: 0
+    #   max_value: 127
+    #   step: 1
+    #   optimistic: true
+    #   initial_value: 0
+    # - platform: template
+    #   id: hamulight_cmdscan_end
+    #   name: "Command Scan End"
+    #   min_value: 0
+    #   max_value: 127
+    #   step: 1
+    #   optimistic: true
+    #   initial_value: 127
+    # - platform: template
+    #   id: hamulight_cmdscan_pause
+    #   name: "Command Scan Pause"
+    #   min_value: 0
+    #   max_value: 7000
+    #   step: 100
+    #   optimistic: true
+    #   initial_value: 500
 
-   button:
-     - platform: template
-       name: "Toggle Hamulight"
-       on_press:
-         - lambda: |-
-             id(hamulight_transmitter).toggle();
-     - platform: template
-       name: "Pair with Driver"
-       on_press:
-         - lambda: |-
-             id(hamulight_transmitter).pair_with_driver();
+    button:
+      - platform: template
+        name: "Toggle Hamulight"
+        on_press:
+          - lambda: |-
+              id(hamulight_transmitter).toggle();
+      - platform: template
+        name: "Pair with Driver"
+        on_press:
+          - lambda: |-
+              id(hamulight_transmitter).pair_with_driver();
 
-   # OPTIONAL - Following button sensors are needed for the command scanner
-   # - platform: template
-   #   name: "Start Command Scan"
-   #   on_press:
-   #     - lambda: |-
-   #         id(hamulight_transmitter).start_command_scan();
-   # - platform: template
-   #   name: "Stop Command Scan"
-   #   on_press:
-   #     - lambda: |-
-   #         id(hamulight_transmitter).stop_command_scan();
+    # OPTIONAL - Following button sensors are needed for the command scanner
+    # - platform: template
+    #   name: "Start Command Scan"
+    #   on_press:
+    #     - lambda: |-
+    #         id(hamulight_transmitter).start_command_scan();
+    # - platform: template
+    #   name: "Stop Command Scan"
+    #   on_press:
+    #     - lambda: |-
+    #         id(hamulight_transmitter).stop_command_scan();
 
 Buttons
 ^^^^^^^
