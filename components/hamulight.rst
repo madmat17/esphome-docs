@@ -1,35 +1,146 @@
+
 Hamulight RF
 ============
 
 .. seo::
     :description: Instructions for setting up the Hamulight RF component in ESPHome to control Hamulight's LED driver.
     :image: remote.svg
+    :keywords: 433, RF, tx, hamulight, remote, LED
 
-The ``hamulight`` component will enable ESPHome to transmit RF remote signals for controlling Hamulight LED drivers
-with ESP32 (S2/S3/C3) using the integrated RMT peripheral for precise RF signal generation.
-An 433MHz RF transmitter needs to be hooked up.
-This project is in no way associated, supported or otherwise linked to Hamulight B.V. or any of its affiliates!
+The ``hamulight`` component lets you send 433 MHz RF signals to control LED drivers manufactured by Hamulight B.V.
 
-This ESPHome custom component enables direct control of Hamulight RF-based lighting systems using an ESP32 (including
-S2/S3/C3 and other variants). It replays the proprietary Hamulight RF protocol using the ESP32's RMT peripheral for
-precise waveform generation. You can toggle lights on/off, pair with drivers (= max brightness button on the remote),
-set brightness — all from Home Assistant. This component also includes an optional "command scan" feature which allows
-to batch-send commands within a defined range for finding unknown commands (not populated on your remote).
+.. note::
 
-The ESPHome Hamulight componenent is written as dynamical as possible to allow other devs to use it for other protocol
-implementations as well.
+    This project is in no way associated, supported or otherwise linked to Hamulight B.V. or any of its affiliates!
+    This component utilizes ESP32's RMT peripheral for high timing accuracy.
+    **Therefore it will only work with ESP32 microcontrollers and its variants**
+    ESPHome Hamulight does **not** use HomeAssistant's light entities. Reason for that is that this project is following a
+    stateless approach (as you never know, if a RF signal has been received and executed by the LED driver). This makes the
+    YAML configuration part a little bit more complex, but also more flexible at the same time.
 
-ESPHome Hamulight does **not** use HomeAssistant's light entities. Reason for that is that this project is following a
-stateless approach (as you never know, if a RF signal has been received and executed by the LED driver). This makes the
-YAML configuration part a little bit more complex, but also more flexible at the same time.
+``hamulight`` synthesizes and replays the proprietary Hamulight RF protocol using the ESP32's RMT peripheral for
+precise waveform generation.
 
-Features
---------
+.. code-block:: yaml
 
-- **Full control over Hamulight RF devices** (on/off, pairing, brightness, and command scanning)
-- **Native Home Assistant integration** via ESPHome (``button`` and ``number`` entities)
-- **Command scanner** for discovering unknown commands
-- **Highly customizable via YAML**
+   # Example configuration entry
+
+   hamulight:
+     id: hamulight_transmitter
+     rf_transmit_pin: GPIO2
+     # led_pin: GPIO21     # <- optional: GPIO for feedback LED
+     rf_address: 0xC535    # <- your remote's unique ID, which the LED driver is / should be paired with
+
+     # Command scanner configuration (optional)
+     # To use, uncomment and define the matching number/sensor blocks below:
+     # command_scanner:
+     #   enabled: true
+     #   cmdscan_start: hamulight_cmdscan_start
+     #   cmdscan_end: hamulight_cmdscan_end
+     #   cmdscan_pause: hamulight_cmdscan_pause
+     #   last_scanned_sensor: hamulight_last_scanned_command
+
+   # IMPORTANT: The sensor component is required, even if the command scanner is not used
+   #            You can use e.g. the uptime-sensor as in the example below (or none at all)
+   sensor:
+     - platform: uptime
+       name: "Uptime"
+   # - platform: template
+   #   id: hamulight_last_scanned_command
+   #   name: "Hamulight Last Scanned Command"
+
+   number:
+     - platform: template
+       id: hamulight_brightness
+       name: "Hamulight Brightness"
+       min_value: 0
+       max_value: 100
+       step: 1
+       optimistic: true
+       initial_value: 100
+       on_value:
+         - lambda: |-
+             id(hamulight_transmitter).set_brightness(x);
+
+   # OPTIONAL - Following number sensors are needed for the command scanner
+   # - platform: template
+   #   id: hamulight_cmdscan_start
+   #   name: "Command Scan Start"
+   #   min_value: 0
+   #   max_value: 127
+   #   step: 1
+   #   optimistic: true
+   #   initial_value: 0
+   # - platform: template
+   #   id: hamulight_cmdscan_end
+   #   name: "Command Scan End"
+   #   min_value: 0
+   #   max_value: 127
+   #   step: 1
+   #   optimistic: true
+   #   initial_value: 127
+   # - platform: template
+   #   id: hamulight_cmdscan_pause
+   #   name: "Command Scan Pause"
+   #   min_value: 0
+   #   max_value: 7000
+   #   step: 100
+   #   optimistic: true
+   #   initial_value: 500
+
+   button:
+     - platform: template
+       name: "Toggle Hamulight"
+       on_press:
+         - lambda: |-
+             id(hamulight_transmitter).toggle();
+     - platform: template
+       name: "Pair with Driver"
+       on_press:
+         - lambda: |-
+             id(hamulight_transmitter).pair_with_driver();
+
+   # OPTIONAL - Following button sensors are needed for the command scanner
+   # - platform: template
+   #   name: "Start Command Scan"
+   #   on_press:
+   #     - lambda: |-
+   #         id(hamulight_transmitter).start_command_scan();
+   # - platform: template
+   #   name: "Stop Command Scan"
+   #   on_press:
+   #     - lambda: |-
+   #         id(hamulight_transmitter).stop_command_scan();
+
+Configuration variables:
+------------------------
+- **id** (**Required**): needed for connecting HomeAssistant entities (buttons and sensors) used by the component
+- **rf_transmit_pin** (**Required**, :ref:`config-pin`): The pin to transmit the remote signal on.
+- **led_pin** (*Optional*, :ref:`config-pin`): GPIO for feedback LED
+- **rf_address** (**Required**): The remote's unique ID the LED driver is/should be trained on
+- **command_scanner** (*Optional*): Used to send different comments to identify unknown commands.
+  Only needed for development! Details: See YAML example configuration.
+
+**command_scanner variables:**
+
++-------------------------+---------+----------+----------------------------------------------+
+| Option                  | Type    | Required | Description                                  |
++=========================+=========+==========+==============================================+
+| ``enabled``             | bool    | No       | Enable command scanner                       |
++-------------------------+---------+----------+----------------------------------------------+
+| ``cmdscan_start``       | int     | No       | ID of start value number entity              |
++-------------------------+---------+----------+----------------------------------------------+
+| ``cmdscan_end``         | int     | No       | ID of end value number entity                |
++-------------------------+---------+----------+----------------------------------------------+
+| ``cmdscan_pause``       | int     | No       | ID of pause duration number entity           |
++-------------------------+---------+----------+----------------------------------------------+
+| ``last_scanned_sensor`` | int     | No       | ID of sensor to publish last scanned cmd     |
++-------------------------+---------+----------+----------------------------------------------+
+
+.. note::
+
+    The ESPHome Hamulight componenent is written as dynamical as possible to allow other devs to use it for other protocol
+    implementations as well.
 
 Protocol Summary
 ^^^^^^^^^^^^^^^^
@@ -76,30 +187,13 @@ Timing and Transmission
 **Example:**  
 Toggle command: Address = 0xC535, Command = 0x5F (Toggle), Checksum = 0x35+0xC5+0x5F-83
 
-----
-
 Hardware Requirements
 ---------------------
 
-- **ESP32, ESP32-S2, ESP32-S3, or ESP32-C3** microcontroller
+- **ESP32, ESP32-S2, ESP32-S3, ESP32-C3**, or comparable microcontroller
 - **433MHz RF transmitter module** (connect to any suitable ESP32 GPIO)
 - (Optional) **Status LED** for RF activity indication
 - **Hamulight RF-based lighting driver(s)**
-
-----
-
-Installation
-------------
-
-1. **Add this repository as an external component** in your ESPHome YAML configuration::
-
-      hamulight:
-
-2. **Configure the** ``hamulight`` **component** (see examples below)
-3. **Wire your 433MHz transmitter** to the selected GPIO on your ESP32
-4. **Compile and upload** your ESPHome firmware
-
-----
 
 Commands / Constants
 --------------------
@@ -114,7 +208,7 @@ First 2 bytes of the protocol is the remote's ID. The assumption (based on the a
 +-------------------+----------+--------------------------------------------------------------+
 | Command           | Byte     | Description                                                  |
 +===================+==========+==============================================================+
-| RFaddress         | var      | Change the address in the YAML config as needed to match      |
+| RFaddress         | var      | Change the address in the YAML config as needed to match     |
 |                   |          | your physical remote                                         |
 +-------------------+----------+--------------------------------------------------------------+
 | RFpower           | 0x5F     | On/off toggle                                                |
@@ -139,136 +233,6 @@ First 2 bytes of the protocol is the remote's ID. The assumption (based on the a
 | RFslideStart      | calc     | Is the 0% dimm value position                                |
 |                   |          | (RFslideRangeMin + RFslideOffset)                            |
 +-------------------+----------+--------------------------------------------------------------+
-
-----
-
-YAML Configuration
-------------------
-
-Component Options
-^^^^^^^^^^^^^^^^^
-
-+---------------------+-----------+----------+-------------------------------------------+
-| Option              | Type      | Required | Description                               |
-+=====================+===========+==========+===========================================+
-| ``id``              | string    | Yes      | ESPHome component ID                      |
-+---------------------+-----------+----------+-------------------------------------------+
-| ``rf_transmit_pin`` | GPIO      | Yes      | GPIO for 433MHz transmitter               |
-+---------------------+-----------+----------+-------------------------------------------+
-| ``rf_address``      | uint16    | Yes      | RF address (hex, unique per device/group) |
-+---------------------+-----------+----------+-------------------------------------------+
-| ``led_pin``         | GPIO      | No       | (Optional) Activity LED GPIO              |
-+---------------------+-----------+----------+-------------------------------------------+
-| ``command_scanner`` | map       | No       | (Optional) Command scan config            |
-+---------------------+-----------+----------+-------------------------------------------+
-
-**Command scanner options:**
-
-+-------------------------+---------+----------+----------------------------------------------+
-| Option                  | Type    | Required | Description                                  |
-+=========================+=========+==========+==============================================+
-| ``enabled``             | bool    | No       | Enable command scanner (default: true)       |
-+-------------------------+---------+----------+----------------------------------------------+
-| ``cmdscan_start``       | id      | No       | ID of start value number entity              |
-+-------------------------+---------+----------+----------------------------------------------+
-| ``cmdscan_end``         | id      | No       | ID of end value number entity                |
-+-------------------------+---------+----------+----------------------------------------------+
-| ``cmdscan_pause``       | id      | No       | ID of pause duration number entity           |
-+-------------------------+---------+----------+----------------------------------------------+
-| ``last_scanned_sensor`` | id      | No       | ID of sensor to publish last scanned cmd     |
-+-------------------------+---------+----------+----------------------------------------------+
-
-Example Configuration
-^^^^^^^^^^^^^^^^^^^^^
-
-.. code-block:: yaml
-
-    hamulight:
-      id: hamulight_transmitter
-      rf_transmit_pin: GPIO2
-      # led_pin: GPIO21     # <- optional: GPIO for feedback LED
-      rf_address: 0xC535    # <- your remote's unique ID, which the LED driver is / should be paired with
-
-      # Command scanner configuration (optional)
-      # To use, uncomment and define the matching number/sensor blocks below:
-      # command_scanner:
-      #   enabled: true
-      #   cmdscan_start: hamulight_cmdscan_start
-      #   cmdscan_end: hamulight_cmdscan_end
-      #   cmdscan_pause: hamulight_cmdscan_pause
-      #   last_scanned_sensor: hamulight_last_scanned_command
-
-    # IMPORTANT: The sensor component is required, even if the command scanner is not used
-    #            You can use e.g. the uptime-sensor as in the example below (or none at all)
-    sensor:
-      - platform: uptime
-        name: "Uptime"
-    # - platform: template
-    #   id: hamulight_last_scanned_command
-    #   name: "Hamulight Last Scanned Command"
-
-    number:
-      - platform: template
-        id: hamulight_brightness
-        name: "Hamulight Brightness"
-        min_value: 0
-        max_value: 100
-        step: 1
-        optimistic: true
-        initial_value: 100
-        on_value:
-          - lambda: |-
-              id(hamulight_transmitter).set_brightness(x);
-
-    # OPTIONAL - Following number sensors are needed for the command scanner
-    # - platform: template
-    #   id: hamulight_cmdscan_start
-    #   name: "Command Scan Start"
-    #   min_value: 0
-    #   max_value: 127
-    #   step: 1
-    #   optimistic: true
-    #   initial_value: 0
-    # - platform: template
-    #   id: hamulight_cmdscan_end
-    #   name: "Command Scan End"
-    #   min_value: 0
-    #   max_value: 127
-    #   step: 1
-    #   optimistic: true
-    #   initial_value: 127
-    # - platform: template
-    #   id: hamulight_cmdscan_pause
-    #   name: "Command Scan Pause"
-    #   min_value: 0
-    #   max_value: 7000
-    #   step: 100
-    #   optimistic: true
-    #   initial_value: 500
-
-    button:
-      - platform: template
-        name: "Toggle Hamulight"
-        on_press:
-          - lambda: |-
-              id(hamulight_transmitter).toggle();
-      - platform: template
-        name: "Pair with Driver"
-        on_press:
-          - lambda: |-
-              id(hamulight_transmitter).pair_with_driver();
-
-    # OPTIONAL - Following button sensors are needed for the command scanner
-    # - platform: template
-    #   name: "Start Command Scan"
-    #   on_press:
-    #     - lambda: |-
-    #         id(hamulight_transmitter).start_command_scan();
-    # - platform: template
-    #   name: "Stop Command Scan"
-    #   on_press:
-    #     - lambda: |-
-    #         id(hamulight_transmitter).stop_command_scan();
 
 Buttons
 ^^^^^^^
@@ -309,60 +273,18 @@ Sensors
 | Hamulight Last Scanned Command| Publishes last command sent during scan        |
 +------------------------------+------------------------------------------------+
 
-----
-
-Home Assistant Integration
--------------------------
-
-All defined buttons, numbers, and sensors will appear as entities in Home Assistant.
-You can control your Hamulight lights via the UI, automations, or scripts.
-
-----
-
-License
--------
-
-This project is licensed under the MIT License.
-See `LICENSE <LICENSE>`_ for details.
-
-----
-
 Acknowledgements
 ----------------
 
 - `Hamulight <https://www.hamulight.nl/>`_ for their products and inspiration
 - ESPHome community for the custom component framework
 
-----
-
-**Questions, issues, or contributions?**  
-Open an `issue <https://github.com/esphome/esphome/issues>`_ or a `pull request <https://github.com/esphome/esphome/pulls>`_!
-
-----
-
 Pairing process
 ---------------
 
 Disconnect and reconnect the LED driver from mains and send the "max brightness" command within the first 10 seconds.
 
-Configuration variables:
-------------------------
 
-- **pin** (**Required**, :ref:`Pin Schema <config-pin_schema>`): The
-  GPIO pin to operate the status LED on.
-- **id** (*Optional*, :ref:`config-id`): Manually specify the ID used for code generation.
-
-.. note::
-
-    If your LED is in an active-LOW mode (when it's on if the output is enabled), use the
-    ``inverted`` option of the :ref:`Pin Schema <config-pin_schema>`:
-
-    .. code-block:: yaml
-
-        status_led:
-          pin:
-            number: GPIOXX
-            inverted: true
 
 See Also
 --------
