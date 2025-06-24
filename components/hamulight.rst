@@ -4,7 +4,6 @@ Hamulight RF
 .. seo::
     :description: Instructions for setting up the Hamulight RF component in ESPHome to control Hamulight's LED driver.
     :image: remote.svg
-    :keywords: RF, Remote, TX, 433, Hamulight, light, led
 
 The ``hamulight`` component will enable ESPHome to transmit RF remote signals for controlling Hamulight LED drivers
 with ESP32 (S2/S3/C3) using the integrated RMT peripheral for precise RF signal generation.
