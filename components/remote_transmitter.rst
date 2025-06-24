@@ -23,10 +23,10 @@ The component is split into two parts:
 
 .. code-block:: yaml
 
-    # Example configuration entry
-    remote_transmitter:
-      pin: GPIOXX
-      carrier_duty_percent: 50%
+     # Example configuration entry
+     remote_transmitter:
+       pin: GPIOXX
+       carrier_duty_percent: 50%
 
 Configuration variables:
 ------------------------
